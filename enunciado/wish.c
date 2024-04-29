@@ -13,7 +13,7 @@
 #define LIMIT 256 // max number of tokens for a command
 #define MAXLINE 1024 // max number of characters from user input
 
-
+char error_message[30] = "An error has occurred\n";
 void init() {
     // Verificar si estamos ejecutando de manera interactiva
     GBSH_PID = getpid();
@@ -36,7 +36,7 @@ void init() {
         setpgid(GBSH_PID, GBSH_PID); // hacemos que el proceso del shell sea el líder del nuevo grupo de procesos
         GBSH_PGID = getpgrp();
         if (GBSH_PID != GBSH_PGID) {
-            printf("Error, el shell no es el líder del grupo de procesos");
+            write(STDERR_FILENO, error_message, strlen(error_message);
             exit(EXIT_FAILURE);
         }
         // Tomar el control de la terminal
@@ -48,7 +48,8 @@ void init() {
         // Obtener el directorio actual que se utilizará en diferentes métodos
         currentDirectory = (char*) calloc(1024, sizeof(char));
     } else {
-        printf("No se pudo hacer que el shell fuera interactivo.\n");
+        //printf("No se pudo hacer que el shell fuera interactivo.\n");
+        write(STDERR_FILENO, error_message, strlen(error_message));
         exit(EXIT_FAILURE);
     }
 }
@@ -93,7 +94,8 @@ int changeDirectory(char* args[]){
     // De lo contrario, cambiamos al directorio especificado por el argumento, si es posible (cd holi)
     else{ 
         if (chdir(args[1]) == -1) {
-            printf(" %s: no existe el directorio\n", args[1]);
+            //printf(" %s: no existe el directorio\n", args[1]);
+            write(STDERR_FILENO, error_message, strlen(error_message));
             return -1;
         }
     }
@@ -113,7 +115,8 @@ int manageEnviron(char * args[], int option){
         // Caso 'setenv': establecemos una variable de entorno con un valor
         case 1: 
             if((args[1] == NULL) && args[2] == NULL){
-                printf("%s","No hay suficientes argumentos de entrada\n");
+               // printf("%s","No hay suficientes argumentos de entrada\n");
+               write(STDERR_FILENO, error_message, strlen(error_message));
                 return -1;
             }
             
@@ -135,7 +138,8 @@ int manageEnviron(char * args[], int option){
         // Caso 'unsetenv': eliminamos una variable de entorno
         case 2:
             if(args[1] == NULL){
-                printf("%s","No hay suficientes argumentos de entrada\n");
+               // printf("%s","No hay suficientes argumentos de entrada\n");
+               write(STDERR_FILENO, error_message, strlen(error_message));
                 return -1;
             }
             if(getenv(args[1]) != NULL){
@@ -155,7 +159,8 @@ void launchProg(char **args, int background){
      int err = -1;
      
      if((pid=fork())==-1){
-         printf("No se pudo crear el proceso hijo\n");
+         //printf("No se pudo crear el proceso hijo\n");
+         write(STDERR_FILENO, error_message, strlen(error_message));
          return;
      }
      // pid == 0 implica que el siguiente código está relacionado con el proceso hijo
@@ -170,7 +175,8 @@ void launchProg(char **args, int background){
         
         // Si lanzamos comandos que no existen, terminamos el proceso
         if (execvp(args[0],args)==err){
-            printf("Comando no encontrado");
+            //printf("Comando no encontrado");
+            write(STDERR_FILENO, error_message, strlen(error_message));
             kill(getpid(),SIGTERM);
         }
      }
@@ -195,7 +201,8 @@ void fileIO(char * args[], char* inputFile, char* outputFile, int option){
     int fileDescriptor; // entre 0 y 19, describiendo el archivo de salida o entrada
     
     if((pid=fork())==-1){
-        printf("No se pudo crear el proceso hijo\n");
+        //printf("No se pudo crear el proceso hijo\n");
+        write(STDERR_FILENO, error_message, strlen(error_message));
         return;
     }
     if(pid==0){
@@ -222,7 +229,7 @@ void fileIO(char * args[], char* inputFile, char* outputFile, int option){
         setenv("parent",getcwd(currentDirectory, 1024),1);
         
         if (execvp(args[0],args)==err){
-            printf("error");
+            write(STDERR_FILENO, error_message, strlen(error_message));
             kill(getpid(),SIGTERM);
         }         
     }
@@ -293,7 +300,8 @@ void pipeHandler(char * args[]){
                     close(filedes2[1]); 
             } 
             }           
-            printf("No se pudo crear el proceso hijo\n");
+            //printf("No se pudo crear el proceso hijo\n");
+            write(STDERR_FILENO, error_message, strlen(error_message));
             return;
         }
         if(pid==0){
@@ -446,7 +454,8 @@ int commandHandler(char * args[]){
             }else if (strcmp(args[i],"<") == 0){
                 aux = i+1;
                 if (args[aux] == NULL || args[aux+1] == NULL || args[aux+2] == NULL ){
-                    printf("Argumentos de entrada insuficientes\n");
+                    //printf("Argumentos de entrada insuficientes\n");
+                    write(STDERR_FILENO, error_message, strlen(error_message));
                     return -1;
                 }else{
                     if (strcmp(args[aux+1],">") != 0){
@@ -462,7 +471,8 @@ int commandHandler(char * args[]){
             // y si es así, llamamos al método apropiado
             else if (strcmp(args[i],">") == 0){
                 if (args[i+1] == NULL){
-                    printf("Argumentos de entrada insuficientes\n");
+                    //printf("Argumentos de entrada insuficientes\n");
+                    write(STDERR_FILENO, error_message, strlen(error_message));
                     return -1;
                 }
                 fileIO(args_aux,NULL,args[i+1],0);
