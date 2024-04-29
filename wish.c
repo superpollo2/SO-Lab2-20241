@@ -14,7 +14,7 @@
 #define MAXLINE 1024 // max number of characters from user input
 
 
-void iniciarShell() {
+void init() {
     // Verificar si estamos ejecutando de manera interactiva
     GBSH_PID = getpid();
     // El shell es interactivo si STDIN es la terminal
@@ -186,9 +186,8 @@ void launchProg(char **args, int background){
      }     
 }
 
-/**
- * Método utilizado para gestionar la redirección de E/S
- */ 
+// Gewstion de la redirección de E/S
+  
 void fileIO(char * args[], char* inputFile, char* outputFile, int option){
      
     int err = -1;
@@ -280,6 +279,7 @@ void pipeHandler(char * args[]){
         
         if (i % 2 != 0){
             pipe(filedes);
+        }else{
             pipe(filedes2); 
         }
         
@@ -291,7 +291,8 @@ void pipeHandler(char * args[]){
                     close(filedes[1]); 
                 }else{
                     close(filedes2[1]); 
-            }            
+            } 
+            }           
             printf("No se pudo crear el proceso hijo\n");
             return;
         }
@@ -352,9 +353,9 @@ void pipeHandler(char * args[]){
         waitpid(pid,NULL,0);
                 
         i++;    
+    
     }
 }
-
 
 // manejo de los comandos introducidos mediante la entrada estándar
 int commandHandler(char * args[]){
