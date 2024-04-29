@@ -1,0 +1,7 @@
+touch mor.txt
+ls
+mkdir torta
+ls -a
+cd torta
+touch aja.c
+ls

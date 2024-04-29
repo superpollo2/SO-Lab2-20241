@@ -14,6 +14,7 @@
 #define MAXLINE 1024 // max number of characters from user input
 
 char error_message[30] = "An error has occurred\n";
+int execute_command(char **args);
 void init() {
     // Verificar si estamos ejecutando de manera interactiva
     GBSH_PID = getpid();
@@ -36,7 +37,7 @@ void init() {
         setpgid(GBSH_PID, GBSH_PID); // hacemos que el proceso del shell sea el líder del nuevo grupo de procesos
         GBSH_PGID = getpgrp();
         if (GBSH_PID != GBSH_PGID) {
-            write(STDERR_FILENO, error_message, strlen(error_message);
+            write(STDERR_FILENO, error_message, strlen(error_message));
             exit(EXIT_FAILURE);
         }
         // Tomar el control de la terminal
@@ -53,6 +54,71 @@ void init() {
         exit(EXIT_FAILURE);
     }
 }
+
+void batch_mode(char *batch_file) {
+    FILE *file = fopen(batch_file, "r");
+    if (!file) {
+        //fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        exit(EXIT_FAILURE);
+    }
+
+    char line[MAXLINE];
+    while (fgets(line, sizeof(line), file)) {
+        // Eliminar el salto de línea
+        line[strcspn(line, "\n")] = 0;
+        char *token;
+        char *args[MAXLINE];
+        int arg_count = 0;
+
+        // Tokenizar la línea
+        token = strtok(line, " ");
+        while (token != NULL) {
+            args[arg_count++] = token;
+            token = strtok(NULL, " ");
+        }
+        args[arg_count] = NULL;
+
+        // Verificar si el primer argumento es "cd"
+        if (strcmp(args[0], "cd") == 0) {
+            changeDirectory(args);
+        } else {
+            // Ejecutar los comandos
+            execute_command(args);
+        }
+    }
+
+    fclose(file);
+}
+
+
+int execute_command(char **args) {
+    if (strcmp(args[0], "cd") == 0) {
+        return changeDirectory(args);
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        // Error en el fork
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        return -1;
+    } else if (pid == 0) {
+        // Proceso hijo
+        if (execvp(args[0], args) == -1) {
+            // Error en execvp
+            write(STDERR_FILENO, error_message, strlen(error_message));
+            return -1;
+        }
+        exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine
+    } else {
+        // Proceso padre
+        int status;
+        waitpid(pid, &status, WUNTRACED);
+        return 0;
+    }
+}
+
+
 
 
 //manejadores de señal
@@ -491,45 +557,56 @@ int commandHandler(char * args[]){
 
 
 int main(int argc, char *argv[], char ** envp) {
-    char line[MAXLINE]; // buffer para la entrada del usuario
-    char * tokens[LIMIT]; // array para los diferentes tokens en el comando
-    int numTokens;
-        
-    no_reprint_prmpt = 0;  
-    pid = -10; // inicializamos pid a un valor que no es posible
+    if (argc == 1) {
+        // Modo interactivo
+        char line[MAXLINE]; // buffer para la entrada del usuario
+        char *tokens[LIMIT]; // array para los diferentes tokens en el comando
+        int numTokens;
+            
+        no_reprint_prmpt = 0;  
+        pid = -10; // inicializamos pid a un valor que no es posible
 
-    init();
+        init();
 
-    
-    // Establecemos nuestro extern char** environ al entorno, para que
-    // podamos tratarlo más tarde en otros métodos
-    environ = envp;
-    
-    // Establecemos shell=<ruta>/simple-c-shell como una variable de entorno para
-    // el hijo
-    setenv("wish",getcwd(currentDirectory, 1024),1);
-    
-    // Bucle principal, donde se leerá la entrada del usuario y se imprimirá el indicador
-    // de comando
-    while(TRUE){
-        if (no_reprint_prmpt == 0) shellPrompt();
-        no_reprint_prmpt = 0;
         
-        memset ( line, '\0', MAXLINE );
+        // Establecemos nuestro extern char** environ al entorno, para que
+        // podamos tratarlo más tarde en otros métodos
+        environ = envp;
+        
+        // Establecemos shell=<ruta>/simple-c-shell como una variable de entorno para
+        // el hijo
+        setenv("wish", getcwd(currentDirectory, 1024), 1);
+        
+        // Bucle principal, donde se leerá la entrada del usuario y se imprimirá el indicador
+        // de comando
+        while (TRUE) {
+            if (no_reprint_prmpt == 0) shellPrompt();
+            no_reprint_prmpt = 0;
+            
+            memset(line, '\0', MAXLINE);
 
 
-        fgets(line, MAXLINE, stdin);
+            fgets(line, MAXLINE, stdin);
 
-        if((tokens[0] = strtok(line," \n\t")) == NULL) continue;
-        
-        // Leemos todos los tokens de la entrada y los pasamos a nuestro
-        // commandHandler como argumento
-        numTokens = 1;
-        while((tokens[numTokens] = strtok(NULL, " \n\t")) != NULL) numTokens++;
-        
-        commandHandler(tokens);
-        
-    }          
+            if ((tokens[0] = strtok(line, " \n\t")) == NULL) continue;
+            
+            // Leemos todos los tokens de la entrada y los pasamos a nuestro
+            // commandHandler como argumento
+            numTokens = 1;
+            while ((tokens[numTokens] = strtok(NULL, " \n\t")) != NULL) numTokens++;
+            
+            commandHandler(tokens);
+            
+        }
+    } else if (argc == 2) {
+        // Modo batch
+        batch_mode(argv[1]);
+    } else {
+        // Error en la llamada
+        write(STDERR_FILENO, error_message, strlen(error_message));
+        exit(EXIT_FAILURE);
+    }
 
     exit(0);
 }
+
