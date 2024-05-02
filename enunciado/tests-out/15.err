@@ -1,1 +1,1 @@
-../tester/run-tests.sh: line 23: 142569 Segmentation fault      (core dumped) ./wish tests/15.in
+../tester/run-tests.sh: line 23: 145181 Segmentation fault      (core dumped) ./wish tests/15.in

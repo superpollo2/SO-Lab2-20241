@@ -113,8 +113,11 @@ void batch_mode(char *batch_file) {
         }
         else if (strcmp(args[0], "exit") == 0) {
             //printf("Saliendo\n");
+            if(arg_count > 1){
+                fprintf(stderr, "%s", error_message);
+                break;
+            }
             exit(0);
-            continue;
         }
         else {
             // Ejecutar los comandos

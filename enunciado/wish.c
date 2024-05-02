@@ -94,7 +94,12 @@ void batch_mode(char *batch_file) {
         }
         // Verificar si el primer argumento es "exit"
         if (strcmp(args[0], "exit") == 0) {
+            if(arg_count > 1){
+                fprintf(stderr, "%s", error_message);
+                break;
+            }
             exit(0);
+            
         } 
         else {
             printf("Ejecutando comando: %s\n", line);
