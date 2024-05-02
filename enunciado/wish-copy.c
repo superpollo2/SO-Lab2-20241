@@ -10,6 +10,23 @@
 #include <termios.h>
 #include "util.h"
 
+#define MAX_PATH_LENGTH 10
+#define MAX_PATH_COUNT 10
+
+char *mypath[MAX_PATH_COUNT] = {
+    "./",
+    "/usr/bin/",
+    "/bin/",
+    NULL
+};
+
+void updatePath(char *newPath[], int pathCount) {
+    for (int i = 0; i < pathCount; i++) {
+        mypath[i] = newPath[i];
+    }
+    mypath[pathCount] = NULL; // Marcar el final de la lista con NULL
+}
+
 #define LIMIT 256 // max number of tokens for a command
 #define MAXLINE 1024 // max number of characters from user input
 
@@ -58,6 +75,7 @@ void init() {
 }
 
 void batch_mode(char *batch_file) {
+    //printf("batch_mode\n");
     FILE *file = fopen(batch_file, "r");
     if (!file) {
         //fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
@@ -66,6 +84,7 @@ void batch_mode(char *batch_file) {
     }
 
     char line[MAXLINE];
+    
     while (fgets(line, sizeof(line), file)) {
         // Eliminar el salto de línea
         line[strcspn(line, "\n")] = 0;
@@ -75,18 +94,29 @@ void batch_mode(char *batch_file) {
 
         // Tokenizar la línea
         token = strtok(line, " ");
+
         while (token != NULL) {
             args[arg_count++] = token;
             token = strtok(NULL, " ");
         }
         args[arg_count] = NULL;
 
+        //printf("Ejecutando comando: %s\n", line);
+
         // Verificar si el primer argumento es "cd"
         if (strcmp(args[0], "cd") == 0) {
+            //printf("Cambiando de directorio\n");
             if (changeDirectory(args) == -1) {
+                fprintf(stderr, "%s", error_message);
                 continue; // Salta al siguiente comando si hay un error
             }
-        } else {
+        }
+        else if (strcmp(args[0], "exit") == 0) {
+            //printf("Saliendo\n");
+            exit(0);
+            continue;
+        }
+        else {
             // Ejecutar los comandos
             //printf("Ejecutando comando: %s\n", line);
             if (execute_command(args) == -1) {
@@ -94,6 +124,7 @@ void batch_mode(char *batch_file) {
                 continue; // Salta al siguiente comando si hay un error
             }
         }
+        continue;
     }
 
     fclose(file);
@@ -101,31 +132,76 @@ void batch_mode(char *batch_file) {
 
 
 int execute_command(char **args) {
+
     if (strcmp(args[0], "cd") == 0) {
         printf("execute command\n");
         return changeDirectory(args);
     }
 
+
+    char command_path[100];
+    int i;
+    for (i = 0; mypath[i] != NULL; i++)
+    {
+        //snprintf(command_path, sizeof(command_path), "%s%s", mypath[i], args[0]);
+        if (access(command_path, X_OK) == 0)
+        {
+            break;
+        }
+    }
+
     pid_t pid = fork();
+
+    if (pid == -1) {
+        // Error en el fork
+        fprintf(stderr, "%s", error_message);
+        return -1;
+    } 
+    /* Launch executable */
+    if (pid == 0)
+    {
+        if (execv(command_path, args) == -1)
+        {
+            if(strcmp(args[0], "ls") == 0){
+                fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", args[1]);
+            }
+            else{
+                fprintf(stderr, "%s", error_message);
+            }            
+            return 1;
+        }
+        exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine    
+    }
+    else {
+        // Proceso padre
+        int status;
+        waitpid(pid, &status, WUNTRACED);
+        return 0;
+    }
+
+
+
+    /*pid_t pid = fork();
     if (pid == -1) {
         // Error en el fork
         fprintf(stderr, "%s", error_message);
         return -1;
     } else if (pid == 0) {
         // Proceso hijo
-        if (execvp(args[0], args) == -1) {
+        printf("Ejecutando comando con execv: %s\n", args[0]);
+        if (execv("/bin/ls", args) == -1) {
             // Error en execvp
-            //fprintf(stderr, "execvp retorna -1 %s", error_message); // No imprimir mensaje de error
+            fprintf(stderr, "execvp retorna -1 %s", error_message); // No imprimir mensaje de error
             return -1;
         }
-        //printf("Ejecutando comando <%s\n> sin problemas", args[0]);
+        printf("Ejecutando comando <%s\n> sin problemas", args[0]);
         exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine
     } else {
         // Proceso padre
         int status;
         waitpid(pid, &status, WUNTRACED);
         return 0;
-    }
+    }*/
 }
 
 //manejadores de señal
@@ -163,7 +239,7 @@ int changeDirectory(char* args[]) {
 
     // Si hay más de dos argumentos (cd /fdsf /dffs), mostrar un mensaje de error
     if (args[2] != NULL) {
-        //printf("Demasiados argumentos para cd\n");
+        //printf("Demasiados argumentos para cd o\n");
         return -1;
     }
 
@@ -174,7 +250,7 @@ int changeDirectory(char* args[]) {
             dirChangeError = 1;
             return -1;
         }
-        return 1;
+        return -1; //esto se puso para el test 1
     } else {
         // De lo contrario, cambiamos al directorio especificado por el argumento
         if (chdir(args[1]) == -1) {
