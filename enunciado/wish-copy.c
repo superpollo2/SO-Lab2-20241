@@ -138,17 +138,24 @@ int execute_command(char **args) {
         return changeDirectory(args);
     }
 
+    /*printf("Args:\n");
+    for(int i = 0; args[i] != NULL; i++) {
+        printf("arg %d: %s\n", i, args[i]);
+    }*/
+
 
     char command_path[100];
     int i;
     for (i = 0; mypath[i] != NULL; i++)
     {
-        //snprintf(command_path, sizeof(command_path), "%s%s", mypath[i], args[0]);
+        snprintf(command_path, sizeof(command_path), "%s%s", mypath[i], args[0]);
         if (access(command_path, X_OK) == 0)
         {
             break;
         }
     }
+
+    //printf("command_path: %s\n", command_path);
 
     pid_t pid = fork();
 
@@ -159,7 +166,14 @@ int execute_command(char **args) {
     } 
     /* Launch executable */
     if (pid == 0)
-    {
+    {        
+
+        if(args[1] == NULL){
+            if(strcmp(args[0], "ls") == 0){
+                execlp(command_path, "ls", (char *)NULL);
+            }
+        }
+
         if (execv(command_path, args) == -1)
         {
             if(strcmp(args[0], "ls") == 0){
