@@ -60,7 +60,8 @@ void init() {
 void batch_mode(char *batch_file) {
     FILE *file = fopen(batch_file, "r");
     if (!file) {
-        fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
+        //fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
+        fprintf(stderr, "%s", error_message);
         exit(EXIT_FAILURE);
     }
 
@@ -87,7 +88,11 @@ void batch_mode(char *batch_file) {
             }
         } else {
             // Ejecutar los comandos
-            execute_command(args);
+            //printf("Ejecutando comando: %s\n", line);
+            if (execute_command(args) == -1) {
+                fprintf(stderr, "%s", error_message);
+                continue; // Salta al siguiente comando si hay un error
+            }
         }
     }
 
@@ -110,9 +115,10 @@ int execute_command(char **args) {
         // Proceso hijo
         if (execvp(args[0], args) == -1) {
             // Error en execvp
-            fprintf(stderr, "%s", error_message);
+            //fprintf(stderr, "execvp retorna -1 %s", error_message); // No imprimir mensaje de error
             return -1;
         }
+        //printf("Ejecutando comando <%s\n> sin problemas", args[0]);
         exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine
     } else {
         // Proceso padre
