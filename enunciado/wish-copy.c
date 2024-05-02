@@ -101,7 +101,7 @@ void batch_mode(char *batch_file) {
         }
         args[arg_count] = NULL;
 
-        //printf("Ejecutando comando: %s\n", line);
+        printf("Ejecutando comando: %s\n", line);
 
         // Verificar si el primer argumento es "cd"
         if (strcmp(args[0], "cd") == 0) {
@@ -118,6 +118,29 @@ void batch_mode(char *batch_file) {
                 break;
             }
             exit(0);
+        }
+        else if (strcmp(args[0], "path") == 0) {
+
+            for (int i = 0; i < arg_count; i++) {
+                printf("arg %d: %s\n", i, args[i]);
+            }
+
+            char *token = strtok(args[1], " "); // Obtener el primer token después de 'path'
+            char *newPath[MAX_PATH_COUNT];
+            int pathCount = 0;
+
+
+            /* Leer las rutas especificadas por el usuario */
+            while (token != NULL) {
+                newPath[pathCount] = token;
+                token = strtok(NULL, " ");
+                pathCount++;
+            }
+
+            /* Actualizar la variable mypath con las nuevas rutas */
+            updatePath(newPath, pathCount);
+            printf("mypath updated successfully.\n");
+            continue; // Continuar al siguiente ciclo del bucle while
         }
         else {
             // Ejecutar los comandos
@@ -173,6 +196,11 @@ int execute_command(char **args) {
 
         if(args[1] == NULL){
             if(strcmp(args[0], "ls") == 0){
+                if(args[1] == ">"){
+                    if(args[2] == NULL){
+                        return -1;
+                    }
+                }
                 execlp(command_path, "ls", (char *)NULL);
             }
         }
