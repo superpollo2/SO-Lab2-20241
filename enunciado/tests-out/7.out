@@ -7,6 +7,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -16,6 +17,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -25,6 +27,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -34,6 +37,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -43,6 +47,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -52,6 +57,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -61,6 +67,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -70,6 +77,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -79,6 +87,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -88,6 +97,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -97,6 +107,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -106,6 +117,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -115,6 +127,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -124,6 +137,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -133,6 +147,7 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c
 batch.txt
 LinuxTutorial2.pdf
 README.md
@@ -142,3 +157,4 @@ test-wish.sh
 util.h
 wish
 wish.c
+wish-copy.c

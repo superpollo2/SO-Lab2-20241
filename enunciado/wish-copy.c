@@ -58,17 +58,14 @@ void init() {
 }
 
 void batch_mode(char *batch_file) {
-    //printf("batch_mode\n");
     FILE *file = fopen(batch_file, "r");
     if (!file) {
-        //fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
-        fprintf(stderr, "%s", error_message);
+        fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
         exit(EXIT_FAILURE);
     }
 
     char line[MAXLINE];
     while (fgets(line, sizeof(line), file)) {
-        //printf("%s", line);
         // Eliminar el salto de línea
         line[strcspn(line, "\n")] = 0;
         char *token;
@@ -85,21 +82,16 @@ void batch_mode(char *batch_file) {
 
         // Verificar si el primer argumento es "cd"
         if (strcmp(args[0], "cd") == 0) {
-            //printf("pre changeDirectory\n");
-            int a = changeDirectory(args);
-            if(a == -1){
-                fprintf(stderr, "%s", error_message);
-                break;
+            if (changeDirectory(args) == -1) {
+                continue; // Salta al siguiente comando si hay un error
             }
         } else {
-            printf("Ejecutando comando: %s\n", line);
             // Ejecutar los comandos
             execute_command(args);
         }
     }
 
     fclose(file);
-    //printf("Fin batch_mode\n");
 }
 
 
