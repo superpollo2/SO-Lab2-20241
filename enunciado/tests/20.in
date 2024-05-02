@@ -1,4 +1,4 @@
-path /bin tests
+./wish
 p1.sh > /tmp/output201 & p2.sh > /tmp/output202 & p3.sh > /tmp/output203
 cat /tmp/output201
 cat /tmp/output202

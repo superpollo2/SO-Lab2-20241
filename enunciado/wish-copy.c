@@ -155,7 +155,7 @@ void batch_mode(char *batch_file)
 
             /* Actualizar la variable mypath con las nuevas rutas */
             updatePath(newPath, pathCount);
-            printf("mypath updated successfully.\n");
+            //printf("mypath updated successfully.\n");
             continue; // Continuar al siguiente ciclo del bucle while
         }
         else
@@ -174,105 +174,77 @@ void batch_mode(char *batch_file)
     fclose(file);
 }
 
-int execute_command(char **args)
-{
 
-    if (strcmp(args[0], "cd") == 0)
-    {
-        printf("execute command\n");
+int execute_command(char **args) {
+    if (strcmp(args[0], "cd") == 0) {
         return changeDirectory(args);
     }
 
-    /*printf("Args:\n");
-    for(int i = 0; args[i] != NULL; i++) {
-        printf("arg %d: %s\n", i, args[i]);
-    }*/
-
     char command_path[100];
     int i;
-    for (i = 0; mypath[i] != NULL; i++)
-    {
+    for (i = 0; mypath[i] != NULL; i++) {
         snprintf(command_path, sizeof(command_path), "%s%s", mypath[i], args[0]);
-        if (access(command_path, X_OK) == 0)
-        {
+        if (access(command_path, X_OK) == 0) {
             break;
         }
     }
 
-    // printf("command_path: %s\n", command_path);
-
     pid_t pid = fork();
 
-    if (pid == -1)
-    {
-        // Error en el fork
-        fprintf(stderr, "%s", error_message);
+    if (pid == -1) {
         return -1;
     }
-    /* Launch executable */
-    if (pid == 0)
-    {
+
+    if (pid == 0) {
+        // Proceso hijo
+
         // Verificar si hay redirección
-        if (args[1] != NULL && strcmp(args[1], ">") == 0)
-        {
-            // Si hay redirección, verificar si es para 'ls'
-            if (strcmp(args[0], "ls") == 0)
-            {
-                // Verificar si hay un tercer argumento
-                if (args[2] == NULL)
-                {
+        int redirect = 0;
+        char *output_file = NULL;
+        for (int j = 1; args[j] != NULL; j++) {
+            if (strcmp(args[j], ">") == 0) {
+                if (args[j + 1] != NULL && args[j + 2] == NULL) {
+                    redirect = 1;
+                    output_file = args[j + 1];
+                    args[j] = NULL;  // Terminar la lista de argumentos antes de '>'
+                    break;
+                } else {
                     return -1;
-                }else if(args[3] != NULL){
-                    return -1;
+                    exit(EXIT_FAILURE);
                 }
             }
         }
 
-        // Ejecutar el comando
-        if (execv(command_path, args) == -1)
-        {
-            if (strcmp(args[0], "ls") == 0)
-            {
-                fprintf(stderr, "ls: cannotjl access '%s': No such file or directory\n", args[1]);
-            }
-            else
-            {
+        if (redirect) {
+            // Redirección detectada
+            FILE *output = freopen(output_file, "w", stdout);
+            if (output == NULL) {
                 return -1;
+                exit(EXIT_FAILURE);
             }
-            return 1;
         }
-        exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine
-    }
-    else
-    {
-        // Proceso padre
-        int status;
-        waitpid(pid, &status, WUNTRACED);
-        return 0;
-    }
 
-    /*pid_t pid = fork();
-    if (pid == -1) {
-        // Error en el fork
-        fprintf(stderr, "%s", error_message);
-        return -1;
-    } else if (pid == 0) {
-        // Proceso hijo
-        printf("Ejecutando comando con execv: %s\n", args[0]);
-        if (execv("/bin/ls", args) == -1) {
-            // Error en execvp
-            fprintf(stderr, "execvp retorna -1 %s", error_message); // No imprimir mensaje de error
+        // Ejecutar el comando
+        if (execv(command_path, args) == -1) {
+            // Error en la ejecución del comando
             return -1;
+            exit(EXIT_FAILURE);
         }
-        printf("Ejecutando comando <%s\n> sin problemas", args[0]);
-        exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine
+
+        // Cerrar el archivo de salida si se ha redirigido
+        if (redirect) {
+            fclose(stdout);
+        }
+
+        exit(EXIT_SUCCESS);
     } else {
         // Proceso padre
         int status;
         waitpid(pid, &status, WUNTRACED);
         return 0;
-    }*/
+    }
 }
+
 
 // manejadores de señal
 void signalHandler_child(int p)
