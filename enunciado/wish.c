@@ -15,6 +15,8 @@
 
 char error_message[30] = "An error has occurred\n";
 int execute_command(char **args);
+int dirChangeError = 0;
+
 void init() {
     // Verificar si estamos ejecutando de manera interactiva
     GBSH_PID = getpid();
@@ -37,7 +39,7 @@ void init() {
         setpgid(GBSH_PID, GBSH_PID); // hacemos que el proceso del shell sea el líder del nuevo grupo de procesos
         GBSH_PGID = getpgrp();
         if (GBSH_PID != GBSH_PGID) {
-            write(STDERR_FILENO, error_message, strlen(error_message));
+            fprintf(stderr, "%s", error_message);
             exit(EXIT_FAILURE);
         }
         // Tomar el control de la terminal
@@ -50,7 +52,7 @@ void init() {
         currentDirectory = (char*) calloc(1024, sizeof(char));
     } else {
         //printf("No se pudo hacer que el shell fuera interactivo.\n");
-        write(STDERR_FILENO, error_message, strlen(error_message));
+        fprintf(stderr, "%s", error_message);
         exit(EXIT_FAILURE);
     }
 }
@@ -59,7 +61,7 @@ void batch_mode(char *batch_file) {
     FILE *file = fopen(batch_file, "r");
     if (!file) {
         //fprintf(stderr, "No se pudo abrir el archivo %s.\n", batch_file);
-        write(STDERR_FILENO, error_message, strlen(error_message));
+        fprintf(stderr, "%s", error_message);
         exit(EXIT_FAILURE);
     }
 
@@ -100,13 +102,13 @@ int execute_command(char **args) {
     pid_t pid = fork();
     if (pid == -1) {
         // Error en el fork
-        write(STDERR_FILENO, error_message, strlen(error_message));
+        fprintf(stderr, "%s", error_message);
         return -1;
     } else if (pid == 0) {
         // Proceso hijo
         if (execvp(args[0], args) == -1) {
             // Error en execvp
-            write(STDERR_FILENO, error_message, strlen(error_message));
+            fprintf(stderr, "%s", error_message);
             return -1;
         }
         exit(EXIT_SUCCESS); // Asegurarse de que el proceso hijo termine
@@ -150,23 +152,34 @@ void shellPrompt(){
 }
 
 
-//Método para cambiar de directorio
-int changeDirectory(char* args[]){
-    // Si no escribimos una ruta (solo 'cd'), entonces vamos al directorio principal(raíz)
-    if (args[1] == NULL) {
-        chdir(getenv("HOME")); 
-        return 1;
+// Método para cambiar de directorio
+int changeDirectory(char* args[]) {
+
+    // Si hay más de dos argumentos (cd /fdsf /dffs), mostrar un mensaje de error
+    if (args[2] != NULL) {
+        printf("Demasiados argumentos para cd\n");
+        return -1;
     }
-    // De lo contrario, cambiamos al directorio especificado por el argumento, si es posible (cd holi)
-    else{ 
-        if (chdir(args[1]) == -1) {
-            //printf(" %s: no existe el directorio\n", args[1]);
-            write(STDERR_FILENO, error_message, strlen(error_message));
+
+    // Si no escribimos una ruta (solo 'cd'), entonces vamos al directorio principal (raíz)
+    if (args[1] == NULL) {
+        if (chdir(getenv("HOME")) == -1) {
+            printf(" %s: no existe el directorio\n", args[1]);
+            dirChangeError = 1;
             return -1;
         }
+        return 1;
+    } else {
+        // De lo contrario, cambiamos al directorio especificado por el argumento
+        if (chdir(args[1]) == -1) {
+            printf(" %s: no existe el directorio\n", args[1]);
+            dirChangeError = 1;
+            return -1;
+        }
+        return 0;
     }
-    return 0;
 }
+
 
 //gestión de las variables de entorno con diferentes opciones
 int manageEnviron(char * args[], int option){
@@ -182,7 +195,7 @@ int manageEnviron(char * args[], int option){
         case 1: 
             if((args[1] == NULL) && args[2] == NULL){
                // printf("%s","No hay suficientes argumentos de entrada\n");
-               write(STDERR_FILENO, error_message, strlen(error_message));
+               fprintf(stderr, "%s", error_message);
                 return -1;
             }
             
@@ -205,7 +218,7 @@ int manageEnviron(char * args[], int option){
         case 2:
             if(args[1] == NULL){
                // printf("%s","No hay suficientes argumentos de entrada\n");
-               write(STDERR_FILENO, error_message, strlen(error_message));
+               fprintf(stderr, "%s", error_message);
                 return -1;
             }
             if(getenv(args[1]) != NULL){
@@ -226,7 +239,7 @@ void launchProg(char **args, int background){
      
      if((pid=fork())==-1){
          //printf("No se pudo crear el proceso hijo\n");
-         write(STDERR_FILENO, error_message, strlen(error_message));
+         fprintf(stderr, "%s", error_message);
          return;
      }
      // pid == 0 implica que el siguiente código está relacionado con el proceso hijo
@@ -242,7 +255,7 @@ void launchProg(char **args, int background){
         // Si lanzamos comandos que no existen, terminamos el proceso
         if (execvp(args[0],args)==err){
             //printf("Comando no encontrado");
-            write(STDERR_FILENO, error_message, strlen(error_message));
+            fprintf(stderr, "%s", error_message);
             kill(getpid(),SIGTERM);
         }
      }
@@ -268,7 +281,7 @@ void fileIO(char * args[], char* inputFile, char* outputFile, int option){
     
     if((pid=fork())==-1){
         //printf("No se pudo crear el proceso hijo\n");
-        write(STDERR_FILENO, error_message, strlen(error_message));
+        fprintf(stderr, "%s", error_message);
         return;
     }
     if(pid==0){
@@ -295,7 +308,7 @@ void fileIO(char * args[], char* inputFile, char* outputFile, int option){
         setenv("parent",getcwd(currentDirectory, 1024),1);
         
         if (execvp(args[0],args)==err){
-            write(STDERR_FILENO, error_message, strlen(error_message));
+            fprintf(stderr, "%s", error_message);
             kill(getpid(),SIGTERM);
         }         
     }
@@ -367,7 +380,7 @@ void pipeHandler(char * args[]){
             } 
             }           
             //printf("No se pudo crear el proceso hijo\n");
-            write(STDERR_FILENO, error_message, strlen(error_message));
+            fprintf(stderr, "%s", error_message);
             return;
         }
         if(pid==0){
@@ -521,7 +534,7 @@ int commandHandler(char * args[]){
                 aux = i+1;
                 if (args[aux] == NULL || args[aux+1] == NULL || args[aux+2] == NULL ){
                     //printf("Argumentos de entrada insuficientes\n");
-                    write(STDERR_FILENO, error_message, strlen(error_message));
+                    fprintf(stderr, "%s", error_message);
                     return -1;
                 }else{
                     if (strcmp(args[aux+1],">") != 0){
@@ -538,7 +551,7 @@ int commandHandler(char * args[]){
             else if (strcmp(args[i],">") == 0){
                 if (args[i+1] == NULL){
                     //printf("Argumentos de entrada insuficientes\n");
-                    write(STDERR_FILENO, error_message, strlen(error_message));
+                    fprintf(stderr, "%s", error_message);
                     return -1;
                 }
                 fileIO(args_aux,NULL,args[i+1],0);
@@ -584,10 +597,7 @@ int main(int argc, char *argv[], char ** envp) {
             no_reprint_prmpt = 0;
             
             memset(line, '\0', MAXLINE);
-
-
             fgets(line, MAXLINE, stdin);
-
             if ((tokens[0] = strtok(line, " \n\t")) == NULL) continue;
             
             // Leemos todos los tokens de la entrada y los pasamos a nuestro
@@ -603,7 +613,7 @@ int main(int argc, char *argv[], char ** envp) {
         batch_mode(argv[1]);
     } else {
         // Error en la llamada
-        write(STDERR_FILENO, error_message, strlen(error_message));
+        fprintf(stderr, "%s", error_message);
         exit(EXIT_FAILURE);
     }
 
